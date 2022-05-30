@@ -9,7 +9,7 @@ class binary
 private:
     string bits;
     int to_int(string strnum);
-    void to_bin(int dec);
+    void to_bin(int dec, bool sign);
     void flip();
     void set(int pos);
     void reset(int pos);
@@ -26,12 +26,13 @@ public:
 binary::binary(string strnum)
 {
     int dec = to_int(strnum);
-    to_bin(dec);
+    bool sign = (strnum.length() > 2 && strnum.at(0) == '0' && strnum.at(1) == 'x' ? false : true);
+    to_bin(dec, sign);
 }
 
 binary::binary(int dec)
 {
-    to_bin(dec);
+    to_bin(dec, true);
 }
 
 binary::~binary()
@@ -49,9 +50,8 @@ int binary::to_int(string strnum)
     return res;
 }
 
-void binary::to_bin(int dec)
+void binary::to_bin(int dec, bool sign)
 {
-    
     bool neg = false;
     if (dec < 0)
     {
@@ -68,13 +68,16 @@ void binary::to_bin(int dec)
         flip();
         int i = bits.length() - 1;
         
-        while (test(i)) i--;
+        while (test(i)) reset(i--);
         set(i);
         bits = '1' + bits;
     }
     else
     {
-        bits = '0' + bits;
+        if (sign == true)
+        {
+            bits = '0' + bits;
+        }
     }
 }
 

@@ -1,215 +1,12 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <map>
+#include <vector>
 #include <string>
-#include <ctime>
+#include "lib\binary.h"
+#include "lib\assembly.h"
 
 using namespace std;
-
-#define R1  0
-#define R2  1
-#define R3  2
-#define J   3
-#define I1  4
-#define I2  5
-#define Il  6
-#define Im  7
-#define S   8
-
-map<string, int> type{
-    {"jr", R1},
-    {"sll", R2}, {"srl", R2},
-    {"add", R3}, {"addu", R3}, {"and", R3}, {"nor", R3}, {"or", R3}, {"slt", R3}, {"sltu", R3}, {"sub", R3}, {"subu", R3},
-    {"j", J}, {"jal", J},
-    {"lui", I1},
-    {"addi", I2}, {"addiu", I2}, {"andi", I2}, {"ori", I2}, {"slti", I2}, {"sltiu", I2},
-    {"beq", Il}, {"bne", Il},
-    {"lbu", Im}, {"lhu", Im}, {"ll", Im}, {"lw", Im}, {"sb", Im}, {"sh", Im}, {"sw", Im},
-    {"syscall", S}
-};
-
-map<string, string> funct{
-    {"jr", "001000"},
-    {"sll", "000000"},
-    {"srl", "000010"},
-    {"add", "100000"},
-    {"addu", "100001"},
-    {"and", "100100"},
-    {"nor", "100111"},
-    {"or", "100101"},
-    {"slt", "101010"},
-    {"sltu", "101011"},
-    {"sub", "100010"},
-    {"subu", "100011"}
-};
-
-map<string, string> opcode{
-    {"j", "000010"},
-    {"jal", "000011"},
-    {"lui", "001111"},
-    {"addi", "001000"},
-    {"addiu", "001001"},
-    {"andi", "001100"},
-    {"ori", "001101"},
-    {"slti", "001010"},
-    {"sltiu", "001011"},
-    {"beq", "000100"},
-    {"bne", "000101"},
-    {"lbu", "100100"},
-    {"lhu", "100101"},
-    {"ll", "110000"},
-    {"lw", "100011"},
-    {"sb", "101000"},
-    {"sh", "101001"},
-    {"sw", "101011"}
-};
-
-map<string, string> reg
-{
-    {"$0", "00000"}, {"$zero", "00000"},
-    {"$1", "00001"}, {"$at", "00001"},
-    {"$2", "00010"}, {"$v0", "00010"},
-    {"$3", "00011"}, {"$v1", "00011"},
-    {"$4", "00100"}, {"$a0", "00100"},
-    {"$5", "00101"}, {"$a1", "00101"},
-    {"$6", "00110"}, {"$a2", "00110"},
-    {"$7", "00111"}, {"$a3", "00111"},
-    {"$8", "01000"}, {"$t0", "01000"},
-    {"$9", "01001"}, {"$t1", "01001"},
-    {"$10", "01010"}, {"$t2", "01010"},
-    {"$11", "01011"}, {"$t3", "01011"},
-    {"$12", "01100"}, {"$t4", "01100"},
-    {"$13", "01101"}, {"$t5", "01101"},
-    {"$14", "01110"}, {"$t6", "01110"},
-    {"$15", "01111"}, {"$t7", "01111"},
-    {"$16", "10000"}, {"$s0", "10000"},
-    {"$17", "10001"}, {"$s1", "10001"},
-    {"$18", "10010"}, {"$s2", "10010"},
-    {"$19", "10011"}, {"$s3", "10011"},
-    {"$20", "10100"}, {"$s4", "10100"},
-    {"$21", "10101"}, {"$s5", "10101"},
-    {"$22", "10110"}, {"$s6", "10110"},
-    {"$23", "10111"}, {"$s7", "10111"},
-    {"$24", "11000"}, {"$t8", "11000"},
-    {"$25", "11001"}, {"$t9", "11001"},
-    {"$26", "11010"}, {"$k0", "11010"},
-    {"$27", "11011"}, {"$k1", "11011"},
-    {"$28", "11100"}, {"$gp", "11100"},
-    {"$29", "11101"}, {"$sp", "11101"},
-    {"$30", "11110"}, {"$fp", "11110"},
-    {"$31", "11111"}, {"$ra", "11111"},
-};
-
-typedef string binary;
-
-binary to_binary(int dec)
-{
-    bool neg = false;
-    if (dec < 0)
-    {
-        neg = true;
-        dec = dec * -1;
-    }
-    binary res;
-    while (dec > 0)
-    {
-        res = char(dec % 2 + 48) + res;
-        dec /= 2;
-    }
-    if (neg == true)
-    {
-        for (int i = res.length() - 1; i >= 0; i--)
-        {
-            res.at(i) = (res.at(i) == '0' ? '1' : '0');
-        }
-        for (int i = res.length() - 1; i >= 0; i--)
-        {
-            if (res.at(i) == '1')
-            {
-                res.at(i) = '0';
-            }
-            else
-            {
-                res.at(i) = '1';
-                break;
-            }
-        }
-        res = '1' + res;
-    }
-    else
-    {
-        res = '0' + res;
-    }
-
-    return res;
-}
-
-binary to_binary(string hex)
-{
-    binary res;
-    if (hex.at(0) == '0' && hex.at(1) == 'x')
-    {
-        for (int i = hex.length() - 1; i > 1; i--)
-        {
-            if (hex.at(i) == '0')
-                res = "0000" + res;
-            else if (hex.at(i) == '1')
-                res = "0001" + res;
-            else if (hex.at(i) == '2')
-                res = "0010" + res;
-            else if (hex.at(i) == '3')
-                res = "0011" + res;
-            else if (hex.at(i) == '4')
-                res = "0100" + res;
-            else if (hex.at(i) == '5')
-                res = "0101" + res;
-            else if (hex.at(i) == '6')
-                res = "0110" + res;
-            else if (hex.at(i) == '7')
-                res = "0111" + res;
-            else if (hex.at(i) == '8')
-                res = "1000" + res;
-            else if (hex.at(i) == '9')
-                res = "1001" + res;
-            else if (hex.at(i) == 'a' || hex.at(i) == 'A')
-                res = "1010" + res;
-            else if (hex.at(i) == 'b' || hex.at(i) == 'B')
-                res = "1011" + res;
-            else if (hex.at(i) == 'c' || hex.at(i) == 'C')
-                res = "1100" + res;
-            else if (hex.at(i) == 'd' || hex.at(i) == 'D')
-                res = "1101" + res;
-            else if (hex.at(i) == 'e' || hex.at(i) == 'E')
-                res = "1110" + res;
-            else if (hex.at(i) == 'f' || hex.at(i) == 'F')
-                res = "1111" + res;
-        }
-        size_t pos = res.find_first_not_of("0");
-        if (pos != string::npos)
-        {
-            res.erase(res.begin(), res.begin() + pos);
-        }
-    }
-
-    return res;
-}
-
-binary zero_extend(binary bin, int siz)
-{
-    binary res(siz - bin.length(), '0');
-    res += bin;
-
-    return res;
-}
-
-binary sign_extend(binary bin, int siz)
-{
-    binary res(siz - bin.length(), bin.at(0));
-    res += bin;
-
-    return res;
-}
 
 void simplify(string &line)
 {
@@ -382,7 +179,9 @@ void binary_code_generate(vector<string> &bin_code, vector<string> asm_code, map
         else if (type[ins] == J)
         {
             op = opcode[ins];
-            imm = zero_extend(to_binary(labels[exp.at(1)]), 26);
+            binary temp(labels[exp.at(1)]);
+            temp.zero_extend(26);
+            imm = temp.get_bits();
             bin_line = op + imm;
         }
         else if (type[ins] == I1)
@@ -391,10 +190,9 @@ void binary_code_generate(vector<string> &bin_code, vector<string> asm_code, map
             op = opcode[ins];
             rs = "00000";
             rt = reg[opr.at(0)];
-            binary num = (opr.at(1).at(0) == '0' && opr.at(1).at(1) == 'x'
-                            ? to_binary(opr.at(1))
-                            : to_binary(stoi(opr.at(1))));
-            imm = zero_extend(num, 16);
+            binary temp(opr.at(1));
+            temp.zero_extend(16);
+            imm = temp.get_bits();
             bin_line = op + rs + rt + imm;
         }
         else if (type[ins] == I2)
@@ -403,10 +201,9 @@ void binary_code_generate(vector<string> &bin_code, vector<string> asm_code, map
             op = opcode[ins];
             rs = reg[opr.at(1)];
             rt = reg[opr.at(0)];
-            binary num = (opr.at(2).at(0) == '0' && opr.at(2).at(1) == 'x'
-                            ? to_binary(opr.at(2))
-                            : to_binary(stoi(opr.at(2))));
-            imm = sign_extend(num, 16);
+            binary temp(opr.at(2));
+            temp.sign_extend(16);
+            imm = temp.get_bits();
             bin_line = op + rs + rt + imm;
         }
         else if (type[ins] == Il)
@@ -415,8 +212,9 @@ void binary_code_generate(vector<string> &bin_code, vector<string> asm_code, map
             op = opcode[ins];
             rs = reg[opr.at(0)];
             rt = reg[opr.at(1)];
-            int addr = labels[opr.at(2)] - 1 - pc / 4;
-            imm = sign_extend(to_binary(addr), 16);
+            binary temp(labels[opr.at(2)] - 1 - pc / 4);
+            temp.sign_extend(16);
+            imm = temp.get_bits();
             bin_line = op + rs + rt + imm;
         }
         else if (type[ins] == Im)
@@ -427,8 +225,10 @@ void binary_code_generate(vector<string> &bin_code, vector<string> asm_code, map
             op = opcode[ins];
             rs = reg[ofs.at(1)];
             rt = reg[opr.at(0)];
-            int offset = (ofs.at(0) == "" ? 0 : stoi(ofs.at(0)));
-            imm = sign_extend(to_binary(offset), 16);
+            ofs.at(0) = (ofs.at(0) == "" ? "0" : ofs.at(0));
+            binary temp(ofs.at(0));
+            temp.sign_extend(16);
+            imm = temp.get_bits();
             bin_line = op + rs + rt + imm;
         }
         else if (type[ins] == S)
@@ -440,14 +240,6 @@ void binary_code_generate(vector<string> &bin_code, vector<string> asm_code, map
     }
 }
 
-void print(vector<string> asm_code)
-{
-    for (string line : asm_code)
-    {
-        cout << line << "\n";
-    }
-}
-
 void write(string filename, vector<string> bin_code, vector<string> asm_code)
 {
     ofstream fout;
@@ -455,7 +247,7 @@ void write(string filename, vector<string> bin_code, vector<string> asm_code)
 
     for (int i = 0; i < bin_code.size(); i++)
     {
-        fout << bin_code.at(i)  << "\n";
+        fout << bin_code.at(i)  << "\t" << asm_code.at(i) << "\n";
     }
 
     fout.close();
@@ -473,7 +265,7 @@ int main()
     binary_code_generate(bin_code, asm_code, labels);
     write("output.bin", bin_code, asm_code);
 
-    cout << "Done. " << clock() - bgn << "ms.\n";
+    cout << "Done!!! " << clock() - bgn << " ms.\n";
 
     return 0;
 }
