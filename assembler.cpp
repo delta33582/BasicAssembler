@@ -240,14 +240,14 @@ void binary_code_generate(vector<string> &bin_code, vector<string> asm_code, map
     }
 }
 
-void write(string filename, vector<string> bin_code, vector<string> asm_code)
+void write(string filename, vector<string> bin_code)
 {
     ofstream fout;
     fout.open(filename);
 
-    for (int i = 0; i < bin_code.size(); i++)
+    for (string bin_line : bin_code)
     {
-        fout << bin_code.at(i)  << "\t" << asm_code.at(i) << "\n";
+        fout << bin_line << "\n";
     }
 
     fout.close();
@@ -263,7 +263,7 @@ int main()
     read_and_simplify("input_for_compiler.asm", asm_code);
     detect_label(asm_code, labels);
     binary_code_generate(bin_code, asm_code, labels);
-    write("output.bin", bin_code, asm_code);
+    write("output.bin", bin_code);
 
     cout << "Done!!! " << clock() - bgn << " ms.\n";
 
